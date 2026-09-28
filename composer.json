@@ -1,0 +1,42 @@
+{
+    "name": "osama-98/laravel-skills",
+    "description": "A collection of Laravel Boost guidelines and agent skills (HyperPay/OPPWA, Backpack for Laravel v6 and more), auto-discovered by Laravel Boost.",
+    "keywords": [
+        "laravel",
+        "laravel-boost",
+        "ai",
+        "skills",
+        "guidelines",
+        "claude-code",
+        "hyperpay",
+        "oppwa",
+        "backpack",
+        "backpack-for-laravel"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Osama Sadah",
+            "email": "osama.sada98@gmail.com"
+        }
+    ],
+    "homepage": "https://github.com/osama-98/laravel-skills",
+    "support": {
+        "issues": "https://github.com/osama-98/laravel-skills/issues",
+        "source": "https://github.com/osama-98/laravel-skills"
+    },
+    "require": {
+        "php": "^8.2"
+    },
+    "conflict": {
+        "osama-98/laravel-hyperpay": "*"
+    },
+    "suggest": {
+        "laravel/boost": "^2.0 — discovers and installs the guidelines and skills shipped by this package."
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true
+    }
+}

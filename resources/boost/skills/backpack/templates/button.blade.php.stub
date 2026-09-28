@@ -1,0 +1,10 @@
+{{-- resources/views/vendor/backpack/crud/buttons/{{button}}.blade.php --}}
+{{-- LINE stack only (uses $entry). usage: CRUD::addButtonFromView('line', '{{button}}', '{{button}}', 'beginning'); + CRUD::allowAccess('{{button}}') --}}
+@if (isset($entry) && $crud->hasAccess('{{button}}', $entry))
+    <a href="{{ url($crud->route.'/'.$entry->getKey().'/{{button}}') }}"
+       class="btn btn-sm btn-link"
+       bp-button="{{button}}"
+       data-style="zoom-in">
+        <i class="la la-check"></i> <span>{{ $button->meta['label'] ?? '{{Button Label}}' }}</span>
+    </a>
+@endif

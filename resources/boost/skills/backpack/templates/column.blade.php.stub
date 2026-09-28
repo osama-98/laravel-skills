@@ -1,0 +1,20 @@
+{{-- resources/views/vendor/backpack/crud/columns/{{column_type}}.blade.php --}}
+{{-- usage: CRUD::column('status')->type('{{column_type}}'); add ->searchLogic(...) to make it searchable --}}
+@php
+    $column['value'] = $column['value'] ?? data_get($entry, $column['name']);
+    if ($column['value'] instanceof \Closure) {
+        $column['value'] = $column['value']($entry);
+    }
+    $column['escaped'] = $column['escaped'] ?? true;
+    $column['text'] = $column['value'] ?? ($column['default'] ?? '-');
+@endphp
+
+<span>
+    @includeWhen(!empty($column['wrapper']), 'crud::columns.inc.wrapper_start')
+        @if($column['escaped'])
+            {{ $column['text'] }}
+        @else
+            {!! $column['text'] !!}
+        @endif
+    @includeWhen(!empty($column['wrapper']), 'crud::columns.inc.wrapper_end')
+</span>

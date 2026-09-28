@@ -1,0 +1,58 @@
+<?php
+
+namespace App\Http\Controllers\Admin\Operations;
+
+use Backpack\CRUD\app\Http\Controllers\Operations\Concerns\HasForm;
+
+/**
+ * {{Name}} operation with a Backpack form (same as `php artisan backpack:crud-form-operation {{Name}}`).
+ * Define fields either in setup{{Name}}Defaults() (same for every controller)
+ * or in the controller's setup{{Name}}Operation() (per controller, + CRUD::setValidation()).
+ */
+trait {{Name}}Operation
+{
+    use HasForm;
+
+    protected function setup{{Name}}Routes(string $segment, string $routeName, string $controller): void
+    {
+        $this->formRoutes(
+            operationName: '{{camelName}}',
+            routesHaveIdSegment: true,   // false when the button lives in the 'top'/'bottom' stack
+            segment: $segment,
+            routeName: $routeName,
+            controller: $controller
+        );
+    }
+
+    protected function setup{{Name}}Defaults(): void
+    {
+        $this->formDefaults(
+            operationName: '{{camelName}}',
+            buttonStack: 'line',
+            buttonMeta: ['icon' => 'la la-edit', 'label' => '{{Label}}'],
+        );
+
+        // $this->crud->operation('{{camelName}}', function () {
+        //     $this->crud->field('message')->type('textarea');
+        // });
+    }
+
+    public function get{{Name}}Form(int $id)
+    {
+        $this->crud->hasAccessOrFail('{{camelName}}');
+
+        return $this->formView($id);
+    }
+
+    public function post{{Name}}Form(int $id)
+    {
+        $this->crud->hasAccessOrFail('{{camelName}}');
+
+        return $this->formAction(id: $id, formLogic: function ($inputs, $entry) {
+            // $inputs are validated if setValidation() was called for this operation
+            // TODO: your logic, e.g. $entry->comments()->create(['body' => $inputs['message']]);
+
+            \Alert::success('{{Label}} saved.')->flash();
+        });
+    }
+}

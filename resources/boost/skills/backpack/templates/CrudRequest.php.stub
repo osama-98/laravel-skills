@@ -1,0 +1,36 @@
+<?php
+
+namespace App\Http\Requests;
+
+use Backpack\CRUD\app\Library\Validation\Rules\ValidUpload;
+use Illuminate\Foundation\Http\FormRequest;
+
+class {{Model}}Request extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return backpack_auth()->check();
+    }
+
+    public function rules(): array
+    {
+        $id = $this->get('id') ?? $this->route('id'); // update form posts the entry key as a hidden input
+
+        return [
+            'name' => 'required|min:2|max:255|unique:{{table}},name,'.$id,
+            // 'category' => 'required',                                     // relationship field name
+            // 'items.*.description' => 'required',                          // subfields / repeatable
+            // 'image' => ValidUpload::field('required')->file('mimes:jpg,jpeg,png,webp|max:2048'),
+        ];
+    }
+
+    public function attributes(): array
+    {
+        return [];
+    }
+
+    public function messages(): array
+    {
+        return [];
+    }
+}

@@ -1,0 +1,37 @@
+{{-- resources/views/vendor/backpack/crud/fields/{{field_type}}.blade.php --}}
+{{-- usage: CRUD::field('x')->type('{{field_type}}'); --}}
+@php
+    $field['value'] = old_empty_or_null($field['name'], '') ?? ($field['value'] ?? ($field['default'] ?? ''));
+@endphp
+
+@include('crud::fields.inc.wrapper_start')
+    <label>{!! $field['label'] !!}</label>
+    @include('crud::fields.inc.translatable_icon')
+
+    <input type="text"
+        name="{{ $field['name'] }}"
+        value="{{ $field['value'] }}"
+        data-init-function="bpFieldInit{{FieldType}}Element"
+        @include('crud::fields.inc.attributes')>
+
+    @if (isset($field['hint']))
+        <p class="help-block">{!! $field['hint'] !!}</p>
+    @endif
+@include('crud::fields.inc.wrapper_end')
+
+@push('crud_fields_styles')
+    {{-- @basset('https://cdn.example.com/lib.css') --}}
+@endpush
+
+@push('crud_fields_scripts')
+    {{-- @basset('https://cdn.example.com/lib.js') --}}
+    @bassetBlock('backpack/crud/fields/{{field_type}}-field.js')
+    <script>
+        function bpFieldInit{{FieldType}}Element(element) {
+            // element = jQuery-wrapped input; find related nodes relative to it (repeatable-safe)
+            element.on('CrudField:disable', () => element.prop('disabled', true));
+            element.on('CrudField:enable',  () => element.prop('disabled', false));
+        }
+    </script>
+    @endBassetBlock
+@endpush

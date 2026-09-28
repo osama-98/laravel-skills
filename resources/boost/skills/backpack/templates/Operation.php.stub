@@ -1,0 +1,57 @@
+<?php
+
+namespace App\Http\Controllers\Admin\Operations;
+
+use Illuminate\Support\Facades\Route;
+
+/**
+ * {{Name}} operation — AJAX action on one entry, triggered by a line "quick" button.
+ * Usage: `use \App\Http\Controllers\Admin\Operations\{{Name}}Operation;` in a CrudController.
+ */
+trait {{Name}}Operation
+{
+    protected function setup{{Name}}Routes(string $segment, string $routeName, string $controller): void
+    {
+        Route::post($segment.'/{id}/{{kebab-name}}', [
+            'as'        => $routeName.'.{{camelName}}',
+            'uses'      => $controller.'@{{camelName}}',
+            'operation' => '{{camelName}}',
+        ]);
+    }
+
+    protected function setup{{Name}}Defaults(): void
+    {
+        $this->crud->allowAccess('{{camelName}}');
+
+        $this->crud->operation('{{camelName}}', function () {
+            $this->crud->loadDefaultOperationSettingsFromConfig();
+        });
+
+        $this->crud->operation(['list', 'show'], function () {
+            // href defaults to {crud route}/{id}/{kebab(button name)}
+            $this->crud->button('{{kebab-name}}')->stack('line')->view('crud::buttons.quick')->meta([
+                'access' => '{{camelName}}',
+                'label'  => '{{Label}}',
+                'icon'   => 'la la-bolt',
+                'ajax'   => [
+                    'method' => 'POST',
+                    'refreshCrudTable' => true,
+                    'success_title' => '{{Label}}',
+                    'success_message' => 'Done.',
+                ],
+            ]);
+        });
+    }
+
+    public function {{camelName}}($id)
+    {
+        $this->crud->hasAccessOrFail('{{camelName}}');
+
+        $entry = $this->crud->getEntry($id);
+
+        // TODO: your logic
+        // abort(400, 'Reason shown to the admin');
+
+        return response()->json(['message' => '{{Label}} completed.']);
+    }
+}
