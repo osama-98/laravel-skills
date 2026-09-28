@@ -1,6 +1,6 @@
 {
     "name": "osama-98/laravel-skills",
-    "description": "A collection of Laravel Boost guidelines and agent skills (HyperPay/OPPWA, Backpack for Laravel v6 and more), auto-discovered by Laravel Boost.",
+    "description": "AI agent skills and guidelines for Laravel — auto-discovered by Laravel Boost and synced to Claude Code, Cursor, GitHub Copilot, Codex and Junie. Includes Backpack for Laravel v6 and HyperPay (OPPWA).",
     "keywords": [
         "laravel",
         "laravel-boost",
@@ -11,7 +11,17 @@
         "hyperpay",
         "oppwa",
         "backpack",
-        "backpack-for-laravel"
+        "backpack-for-laravel",
+        "agent-skills",
+        "ai-agents",
+        "ai-skills",
+        "boost",
+        "cursor",
+        "copilot",
+        "codex",
+        "junie",
+        "llm",
+        "laravel-package"
     ],
     "license": "MIT",
     "authors": [
