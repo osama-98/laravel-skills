@@ -72,16 +72,6 @@ resources/boost/
    copies. Keep example Blade code in `.md` files or `*.stub` files.
 4. Tag a release; users run `composer update osama-98/laravel-skills && php artisan boost:update`.
 
-## Migrating from `osama-98/laravel-hyperpay`
-
-This package supersedes it (same HyperPay skills) and declares a conflict so both can't be installed:
-
-```bash
-composer remove --dev osama-98/laravel-hyperpay
-composer require --dev osama-98/laravel-skills
-php artisan boost:update
-```
-
 ## Scope
 
 Documentation and agent guidance only — no runtime code, no service provider, nothing to configure.
