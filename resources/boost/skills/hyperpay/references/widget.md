@@ -57,8 +57,8 @@ Declare `var wpwlOptions = {…}` **before** the widget script tag.
 | `allowEmptyCardHolderName` | Permit blank holder |
 | `disableCardExpiryDateValidation` | Skip expiry validation |
 | `disableSubmitOnEnter` | Block Enter-key submit |
-| `paymentTarget` | Submit target |
-| `shopperResultTarget` | Redirect results inside a target iframe |
+| `paymentTarget` | Where the card form submits and 3-D Secure opens — see [3-D Secure: where it opens](#3-d-secure-where-it-opens) |
+| `shopperResultTarget` | Where the result redirect opens; only used with `paymentTarget` |
 | `enableSAQACompliance` | Render holder and expiry in separate iframes (SAQ-A scope) |
 | `brandDetection`, `brandDetectionType` | Enable brand detection; `"binlist"` enables BIN lookup |
 
@@ -75,6 +75,7 @@ Declare `var wpwlOptions = {…}` **before** the widget script tag.
 | `onError(error)` | `InvalidCheckoutIdError`, `PciIframeSubmitError`, `WidgetError` |
 | `onBlurCardNumber`, `onBlurCardHolder`, `onBlurSecurityCode` | Iframe field blur |
 | `onReadyIframeCommunication` | PCI iframe channel established |
+| `onLoadThreeDIframe` | The widget's own 3-D Secure iframe has loaded and is shown; context (`this`) is that iframe |
 
 ```javascript
 var wpwlOptions = {
@@ -99,6 +100,19 @@ var wpwlOptions = {
 
 `InvalidCheckoutIdError` almost always means the 30-minute checkout window elapsed. Recover by
 preparing a fresh checkout, never by retrying the same ID.
+
+## 3-D Secure: where it opens
+
+The docs describe `paymentTarget` only as "We submit the form to this target. In case of additional
+shopper interaction, e.g. 3DSecure, we redirect the shopper within this target", and give no
+default. The widget source (`{baseUrl}/v1/static/{cacheVersion}/js/static.min.js`, checked
+2026-09-29) settles it: `paymentTarget` defaults to `undefined`, and the 3-D Secure redirect form
+targets `paymentTarget ? paymentTarget : <the form container's id>`.
+
+| `paymentTarget` | Where 3-D Secure opens |
+|-----------------|------------------------|
+| not set (default) | **On the same page**, in an iframe the widget places next to the card form. The widget hides the form, shows the iframe at `threeDIframeSize` and calls `onLoadThreeDIframe`. |
+| `"_top"` | The **whole tab** navigates to the gateway, then the issuer's page, then `shopperResultUrl`. |
 
 Registration-token variants of the widget (standalone tokenization, one-click) are in
 `tokenization.md`.
