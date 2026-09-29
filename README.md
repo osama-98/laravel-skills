@@ -69,7 +69,7 @@ php artisan boost:update
 | Topic | Skills (loaded on demand) | Guideline (always in context) |
 |-------|---------------------------|-------------------------------|
 | **Backpack for Laravel v6** (admin panel) | `backpack` | `backpack`: only when `backpack/crud` is installed; adapts to `backpack/pro` and `permissionmanager` |
-| **HyperPay / OPPWA** (payment gateway) | `hyperpay-integration`, `hyperpay-docs` | `hyperpay`: only once `config/hyperpay.php` exists |
+| **HyperPay / OPPWA** (payment gateway) | `hyperpay` | `hyperpay`: only once `config/hyperpay.php` exists |
 
 More skills are on the way. [Request a skill](https://github.com/osama-98/laravel-skills/issues/new?title=Skill%20request:%20) or [add one yourself](#contributing).
 
@@ -88,9 +88,12 @@ More skills are on the way. [Request a skill](https://github.com/osama-98/larave
 
 ### HyperPay (OPPWA)
 
-**`hyperpay-integration`**: add HyperPay payments to a Laravel app. Covers config layout, layering, prepare-checkout and the COPYandPAY widget, saved cards (registration tokens), merchant-initiated charges for subscriptions and installments, the encrypted webhook, and testing.
+**`hyperpay`**: add HyperPay payments to a Laravel app, with an offline API reference so the agent doesn't need the live docs.
 
-**`hyperpay-docs`**: offline HyperPay API reference (a router plus 10 pages): parameters, tokenization, backoffice (capture, refund, reversal), subscriptions, webhooks, result codes, widget options, test cards, payment-method matrix and doc index.
+- Config layout, layering, prepare-checkout and the COPYandPAY widget
+- Saved cards (registration tokens) and merchant-initiated charges for subscriptions and installments
+- The encrypted webhook and testing
+- 10 reference pages: parameters, tokenization, backoffice (capture, refund, reversal), subscriptions, webhooks, result codes, widget options and where 3-D Secure opens, test cards, payment-method matrix and doc index
 
 ## How it works
 
@@ -112,8 +115,7 @@ resources/boost/
 │   └── hyperpay.blade.php
 └── skills/
     ├── backpack/              SKILL.md, references/, templates/
-    ├── hyperpay-docs/         SKILL.md, references/
-    └── hyperpay-integration/  SKILL.md
+    └── hyperpay/              SKILL.md, references/
 ```
 
 ## Supported AI agents

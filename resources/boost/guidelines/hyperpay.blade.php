@@ -1,10 +1,10 @@
-{{-- Rendered by Laravel Boost. Only emitted once the application has config/hyperpay.php (the layout the hyperpay-integration skill prescribes); empty output = guideline skipped. The hyperpay-* skills are installed regardless. --}}
+{{-- Rendered by Laravel Boost. Only emitted once the application has config/hyperpay.php (the layout the hyperpay skill prescribes); empty output = guideline skipped. The hyperpay skill is installed regardless. --}}
 @if (file_exists(config_path('hyperpay.php')))
 # HyperPay
 
-This application integrates HyperPay (OPPWA). Always activate the `hyperpay-integration` skill when
-building or changing payment code, and `hyperpay-docs` when you need an endpoint, parameter, result
-code or test card. Do not fetch the live docs first — both skills are offline references.
+This application integrates HyperPay (OPPWA). Always activate the `hyperpay` skill when building or
+changing payment code, or when you need an endpoint, parameter, result code or test card. Do not
+fetch the live docs first — the skill is an offline reference.
 
 ## Standing constraints
 

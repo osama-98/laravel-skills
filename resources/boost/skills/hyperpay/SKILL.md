@@ -1,15 +1,70 @@
 ---
-name: hyperpay-integration
-description: "Build a HyperPay (OPPWA) payment integration in a Laravel application: prepare-checkout and the COPYandPAY widget, verifying the result, saving cards as registration tokens, merchant-initiated charges for subscriptions and installments, and the encrypted webhook. Activate when adding HyperPay to a Laravel app, or when the user mentions HyperPay, COPYandPAY, oppwa, registration token, standing instruction, MIT charge, or a HyperPay webhook."
+name: hyperpay
+description: "Builds and maintains HyperPay (OPPWA) payment integrations in Laravel, with an offline API reference. Covers prepare-checkout and the COPYandPAY widget (wpwlOptions, 3-D Secure), verifying the result, saving cards as registration tokens, merchant-initiated charges for subscriptions and installments, the encrypted webhook, backoffice operations (capture, refund, reversal), result codes and test cards. Activate when adding or changing HyperPay payment code, or when the user mentions HyperPay, OPPWA, COPYandPAY, wpwlOptions, registration token, standing instruction, MIT charge, or a HyperPay webhook — without fetching the live docs."
 license: MIT
 metadata:
   author: osama-98
 ---
 
-# HyperPay Integration for Laravel
+# HyperPay for Laravel
 
-Vendor-neutral build guide. For API facts — every parameter, result code, endpoint, test card —
-use the `hyperpay-docs` skill.
+A build guide for Laravel plus an offline API reference. Source: https://hyperpay.docs.oppwa.com
+
+## Reference files
+
+Read the file that matches the task — do not load them all.
+
+| File | Covers |
+|------|--------|
+| `references/parameters.md` | Full request/response parameter reference, every group |
+| `references/tokenization.md` | Registration tokens, token types, card-on-file / standing instruction matrix |
+| `references/backoffice.md` | Capture, refund, reversal, payout, rebill, chargeback + legal transaction flows |
+| `references/subscriptions.md` | Scheduling API, cron `job.*` fields, MAC scheduler, merchant advice codes |
+| `references/webhooks.md` | Configuration, AES-256-GCM decryption, payload shapes, retries, real payloads |
+| `references/result-codes.md` | Full result-code taxonomy with regex patterns and required action |
+| `references/widget.md` | COPYandPAY widget integration, `wpwlOptions` JS API, where 3-D Secure opens |
+| `references/testing.md` | Test cards, `testMode`, 3DS test scenarios |
+| `references/payment-methods.md` | Brand capability matrix (VISA, MADA, APPLEPAY, GCC brands, BNPL: VALU / POSTPAY) |
+| `references/doc-index.md` | Canonical URL map of all 94 docs pages + scraping notes, for anything not covered above |
+
+## API essentials
+
+| Environment | Base URL |
+|-------------|----------|
+| Test | `https://eu-test.oppwa.com` |
+| Production | `https://oppwa.com` |
+
+Auth on every request: `Authorization: Bearer {accessToken}` header, plus `entityId` in the body.
+All requests are `application/x-www-form-urlencoded`; all responses are JSON.
+
+| Operation | Method + path | Type |
+|-----------|---------------|------|
+| Prepare checkout (widget) | `POST /v1/checkouts` | — |
+| Checkout status | `GET /v1/checkouts/{id}/payment` | — |
+| Direct payment (server-to-server) | `POST /v1/payments` | `PA` `DB` `CD` |
+| Capture / refund / reversal / rebill | `POST /v1/payments/{id}` | `CP` `RF` `RV` `RB` |
+| Create token (standalone) | `POST /v1/registrations` | `RG` |
+| Charge a stored token | `POST /v1/registrations/{id}/payments` | `PA` `DB` |
+| Delete token | `DELETE /v1/registrations/{id}?entityId=…` | `DR` |
+| Extend token retention | `POST /v1/registrations/{id}/extendlife` | `TE` |
+| Create schedule | `POST /scheduling/v1/schedules` | `SD` |
+| Change schedule | `POST /scheduling/v1/schedules/{id}/reschedule` | `RS` |
+| Cancel schedule | `POST /scheduling/v1/schedules/{id}/deschedule` | `DS` |
+| List schedules for a token | `GET /scheduling/v1/schedules/{registrationId}` | — |
+
+| Code | Meaning | Code | Meaning |
+|------|---------|------|---------|
+| `PA` | Pre-authorization | `RF` | Refund |
+| `DB` | Debit | `RV` | Reversal (uncaptured `PA` only) |
+| `CD` | Credit / payout | `RB` | Rebill |
+| `CP` | Capture | `CB` / `CR` | Chargeback / chargeback reversal |
+| `RG` | Registration (tokenization) | `DR` / `TE` | Deregister / extend token |
+| `SD` / `RS` / `DS` | Schedule / reschedule / deschedule | `3D` / `RE` | Standalone 3DS / standalone risk |
+
+- Reversal is only legal on an uncaptured `PA`. Once funds moved (`DB`, `CP`, `CD`), use `RF`.
+- `merchantTransactionId` needs ≥ 8 characters.
+- Amounts use a dot decimal separator and no thousands separator (`92.00`).
+- `notificationUrl` is deprecated. Configure webhooks in the merchant portal instead.
 
 ## Configuration
 
@@ -112,8 +167,8 @@ open, not a failed payment.
 
 ### Render
 
-Return the `id` and `integrity` hash to the frontend. Widget markup and `wpwlOptions` are in
-`hyperpay-docs` → `references/widget.md`.
+Return the `id` and `integrity` hash to the frontend. Widget markup, `wpwlOptions` and where
+3-D Secure opens are in `references/widget.md`.
 
 ### Complete
 
@@ -121,6 +176,7 @@ The shopper returns to `shopperResultUrl?resourcePath=/v1/checkouts/{id}/payment
 `GET` that path with `entityId` in the query, map the result code, and fulfill.
 
 Checkout IDs expire after 30 minutes — prune abandoned draft transactions on the same clock.
+Status GETs are throttled to 2 per checkout per minute, so treat the webhook as the source of truth.
 
 ## Flow 2 — merchant-initiated charges
 
@@ -230,7 +286,7 @@ never retry, and still answer 2xx.
 Never compare result codes for equality; HyperPay adds codes within existing families.
 Prefix-match with regex and map to your own status enum. Check PENDING first, or `000.200.*` will
 false-match a SUCCESS pattern. Full taxonomy and the recommended patterns:
-`hyperpay-docs` → `references/result-codes.md`.
+`references/result-codes.md`.
 
 Distinguish at minimum: success, pending, manual review, hard decline, SCA required, retriable
 connector error. Collapsing "retriable timeout" into "failed" loses money; collapsing "hard decline"
@@ -239,7 +295,7 @@ into "retriable" burns scheme fees.
 ## Testing
 
 - Point `HYPERPAY_URL` at `https://eu-test.oppwa.com` and use the test cards in
-  `hyperpay-docs` → `references/testing.md`.
+  `references/testing.md`.
 - `000.100.112` is a **success** in connector test mode.
 - Fake the HTTP client (`Http::fake()`) for unit tests; assert on the outgoing payload, which is
   where standing-instruction bugs hide.
