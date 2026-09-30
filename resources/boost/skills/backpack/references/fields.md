@@ -191,7 +191,7 @@ Available variables: `$field` (all attributes incl. `value`), `$crud`, `$entry` 
 
 @push('crud_fields_scripts')
     @basset('https://cdn.example.com/lib.js')
-    @bassetBlock('backpack/crud/fields/address-field.js')
+    @bassetBlock('app/fields/address.js')
     <script>
         function bpFieldInitAddressElement(element) {
             // element = jQuery-wrapped input with data-init-function; find siblings relative to it, not by id
@@ -202,7 +202,7 @@ Available variables: `$field` (all attributes incl. `value`), `$crud`, `$entry` 
     @endBassetBlock
 @endpush
 ```
-Conventions: put JS in a uniquely named `bpFieldInit*` function referenced by `data-init-function` (works in repeatable/modals); load assets with `@basset`/`@bassetBlock` (loaded once per page). If the custom type uploads files, register an uploader: `->withFiles(['uploader' => \Backpack\CRUD\app\Library\Uploaders\SingleFile::class])` or globally `app('UploadersRepository')->addUploaderClasses(['custom_upload' => SingleFile::class], 'withFiles');`.
+Conventions: put JS in a uniquely named `bpFieldInit*` function referenced by `data-init-function` (works in repeatable/modals); load assets with `@basset`/`@bassetBlock` (loaded once per page). Give blocks an app-prefixed name (not `backpack/...`, which can clash with a stock view's block) and keep per-request values (`$field['name']`, the user, the organization) out of them — a block is saved once per name, so read those values from data attributes on `element`. If the custom type uploads files, register an uploader: `->withFiles(['uploader' => \Backpack\CRUD\app\Library\Uploaders\SingleFile::class])` or globally `app('UploadersRepository')->addUploaderClasses(['custom_upload' => SingleFile::class], 'withFiles');`.
 
 ## Filtering options of a select
 1. Few options → `select_from_array`/`select2_from_array` with your own array.

@@ -42,7 +42,13 @@
 - **Bulk checkboxes missing** → first column hidden/not rendered, or first column contains a link.
 - **`@can` always false in admin** → guard mismatch (see `permission-manager.md`).
 - **"Trait not found" for Trash** → namespace `Backpack\Pro` (not `Backpack\PRO`), or PRO not installed/authorized.
-- **Assets/styles broken after deploy** → `APP_URL`, `storage:link`, `basset:clear && basset:cache`, hard refresh.
+- **Assets/styles broken after deploy** → `APP_URL`, `storage:link`, `basset:cache` (`basset:fresh` on a single server), hard refresh.
+- **`/storage/basset/*` 403/404 on some requests only (several servers)** → block files / variable `@basset`s are written per server at first render; use a shared Basset disk (see `cli-deploy.md`).
+- **A `@bassetBlock` shows another user's/organization's value, or old content** → blocks are cached by name: unique app-prefixed names, no per-request values inside.
+- **An edit to your own CSS/JS never shows up (shared Basset disk)** → it is loaded as a local file through Basset, which keeps the first copy forever; move it to `vite_scripts` / `vite_styles` (see `cli-deploy.md`).
+- **Entries added to `ui.php` `scripts`/`styles`/`vite_*` are ignored** → the theme config defines the same key and wins (`backpack_theme_config()`); add them to `config/backpack/theme-tabler.php`.
+- **Admin avatar 403 locally** → Basset dev mode + `avatar_type => 'gravatar'`; use a User method for `avatar_type` (see `ui-widgets-themes.md`).
+- **Basset docs mismatch** → the online README (`main`) is for a newer Basset than Backpack v6's 1.x; trust `vendor/backpack/basset/readme.md` and the source.
 - **Slow List** → N+1: `CRUD::with('relation')` / `eagerLoadRelationships`, use `withCount` instead of `relationship_count`, `showEntryCount => false` for millions of rows, `ajax` relationship fields in forms.
 - **Title/heading set in setup() not applied** → set via `setHeading('x', 'list')` or inside actions (actions overwrite).
 - **Events defined in controller don't fire elsewhere** → they're only registered when that controller runs; use Observers for app-wide logic.

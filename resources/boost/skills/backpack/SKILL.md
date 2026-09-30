@@ -150,7 +150,7 @@ Icons are Line Awesome (`la la-*`).
 16. **Reorder** needs integer `parent_id` (nullable), `lft`, `rgt`, `depth` (default 0) or `reorderColumnNames` setting.
 17. **Update route is `PUT {segment}/{id}`**, create is `POST {segment}`, delete is `DELETE {segment}/{id}`. Route names: `{segment}.index|search|showDetailsRow|create|store|edit|update|destroy|show|reorder|save.reorder`.
 18. **Admin helpers**: in admin code use `backpack_user()`, `backpack_auth()`, `backpack_url()`, `backpack_view()`, `backpack_middleware()`, `backpack_pro()` instead of Laravel's `auth()`/`url()`.
-19. **Basset** serves CSS/JS: load custom assets with `@basset(...)` in blade or `Widget::add()->type('script'|'style')`. After deploy: `php artisan basset:clear && php artisan basset:cache`. Use `BASSET_DEV_MODE=true` locally.
+19. **Basset** serves CSS/JS: load custom assets with `@basset(...)` in blade or `Widget::add()->type('script'|'style')`. After deploy: `php artisan basset:cache` (it only pre-caches literal `@basset('…')` strings; `@bassetBlock` output and `@basset($variable)` are written at first render). Never `basset:clear` a disk shared by several servers. Never put per-request values inside a `@bassetBlock`: it is saved once per name. Your own CSS/JS belongs in Vite (`vite_scripts`/`vite_styles`, in the theme config — it wins over `ui.php`): local files loaded through Basset are copied once and never refreshed. Use `BASSET_DEV_MODE=true` locally. Multi-server rules in `references/cli-deploy.md`.
 20. **Don't over-publish vendor views**: prefer a new custom field/column/button/filter type over overriding a stock one (overrides stop receiving updates).
 
 ## Task playbooks

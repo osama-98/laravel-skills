@@ -171,7 +171,10 @@ Override a single Tabler view: copy it to `resources/views/vendor/backpack/theme
 Create `resources/views/my-theme/`, set `'view_namespace' => 'my-theme.'` (trailing dot) and `'view_namespace_fallback' => 'backpack.theme-coreuiv4::'`. Override `inc/theme_styles.blade.php`, `inc/theme_scripts.blade.php` (load Bootstrap yourself via `@basset`), `layouts/*.blade.php`, `inc/sidebar`, `inc/main_header`, `components/*` (menu components). Package with `theme-skeleton`.
 
 ### Global CSS/JS & look
-- `config/backpack/ui.php` `styles`/`scripts` (and `vite_styles`/`vite_scripts`, `mix_*`) → every admin page. Or theme config `styles`/`scripts`.
+- Every admin page loads `styles` / `scripts` (each entry through `@basset`), `mix_styles` / `mix_scripts` (`mix()`) and `vite_styles` / `vite_scripts` (`@vite`), in that order (`crud::ui.inc.styles` / `crud::ui.inc.scripts`).
+- **Which file wins:** they are read with `backpack_theme_config($key)`, which returns the theme config's key first (e.g. `config/backpack/theme-tabler.php`), then the fallback theme's, then `ui.php`'s. A key defined in the theme file completely hides the same key in `ui.php`: theme-tabler's own config defines `styles`, so `ui.php`'s `styles` is ignored by default, and any other key you add to the theme config (e.g. `vite_scripts`) does the same — keep each key in one file, normally the theme config.
+- Own CSS/JS: prefer `vite_*` over local paths in `styles`/`scripts` (see `cli-deploy.md` → "Your own CSS/JS"). The online v6 docs only describe the old `scripts` array; the `vite_*` keys are verified in the v6 source.
+- Tests: `withoutVite()` makes `@vite` print nothing, so asserting "page loads my script" needs a stand-in `Vite` bound in the container whose `__invoke()` prints one tag per entry point.
 - CSS hooks: elements carry `bp-section="page-header"` and `bp-section="crud-operation-{list|create|update|show|reorder}"`; buttons carry `bp-button="name"`.
 - Project branding: `ui.php` `project_name`, `project_logo`, `home_link`, `developer_name`, `developer_link`, `show_powered_by`, `meta_robots_content`, `html_direction` (`rtl` for Arabic), `default_date_format` (ISO tokens).
 - Favicons & mobile metas: `php artisan backpack:publish-header-metas`.
@@ -185,6 +188,7 @@ Create `resources/views/my-theme/`, set `'view_namespace' => 'my-theme.'` (trail
 - My Account (name/email/password): `Backpack\CRUD\app\Http\Controllers\Auth\MyAccountController`; extra inputs → override `resources/views/vendor/backpack/theme-tabler/my_account.blade.php` + fillable.
 - Email verification (crud ≥ 6.2): user `implements MustVerifyEmail`, `email_verified_at` column, `verified`/`signed` middleware aliases, `setup_email_verification_routes => true`.
 - Avatar: `avatar_type` = `gravatar` | `null` (initials) | a User method name returning a URL; `gravatar_fallback`.
+  - **`gravatar` goes through Basset** (`backpack_avatar_url()`): it copies the image into the Basset disk (one file per user on a shared disk), and in **Basset dev mode** the page's second avatar (sidebar, then user menu) gets `LOADED` and a Basset path that was never written → **403**. To load it straight from Gravatar, set `avatar_type` to a User method, e.g. `avatarUrl()` returning `Gravatar::fallback(config('backpack.base.gravatar_fallback'))->get($this->email, ['size' => 80])` (`Creativeorange\Gravatar\Facades\Gravatar`, the package Backpack already uses), and allow `https://www.gravatar.com` in the CSP `img-src`.
 - Create admin from CLI: `php artisan backpack:user`.
 
 ## Helpers (usable anywhere except config files)
