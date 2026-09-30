@@ -40,16 +40,34 @@
 | `backpack:filemanager:install` | after `composer require backpack/filemanager` |
 
 ## Basset (asset loader used by Backpack v6)
-- Blade: `@basset('https://cdn.../lib.js')`, `@basset(public_path('css/x.css'))`, `@basset(base_path('vendor/pkg/x.js'))`, `@bassetBlock('unique/name.js') <script>..</script> @endBassetBlock`. Assets are downloaded/copied once and served from `storage/app/public/basset`.
-- Commands: `basset:install`, `basset:check`, `basset:cache` (pre-cache everything), `basset:clear`, `basset:fresh`, `basset:internalize`.
+Backpack v6 uses `backpack/basset` 1.x (`backpack/crud` 6 requires `^1.1.1|^1.3.2`). Everything below is for 1.x — verified against basset 1.3.10 source and its bundled `vendor/backpack/basset/readme.md`. The online README on the `main` branch describes a newer Basset (a `basset` default disk, the map at `storage/app/basset/.basset`, `basset:cache --stale`, named assets, "`basset:cache` alone is sufficient"); don't apply it to a v6 project.
+- Blade: `@basset('https://cdn.../lib.js')`, `@basset(public_path('css/x.css'))`, `@basset(base_path('vendor/pkg/x.js'))`, `@bassetBlock('unique/name.js') <script>..</script> @endBassetBlock`. Assets are downloaded/copied once and served from the Basset disk (`storage/app/public/basset` on the default `public` disk).
+- Commands: `basset:install`, `basset:check`, `basset:cache` (pre-caches literal `@basset('…')`, `@bassetArchive(…)`, `@bassetDirectory(…)` found in the Blade files of `view_paths` — see below for what it skips), `basset:clear` (deletes the whole `basset/` folder on the disk, cache map included), `basset:fresh` (clear + cache; the 1.x readme recommends it after each deploy on a single server), `basset:internalize` (alias of `basset:cache`).
 - Env (`config/backpack/basset.php`): `BASSET_DEV_MODE` (defaults to true when `APP_ENV=local` → no caching while editing), `BASSET_DISK` (default `public`), `BASSET_VERIFY_SSL_CERTIFICATE`, `BASSET_CACHE_MAP`, `BASSET_RELATIVE_PATHS`. First page loads are slow until cached.
+- Any Laravel disk works for `BASSET_DISK` (the readme's remote example is `BASSET_DISK=s3` + `BASSET_CACHE_MAP=false` on Vapor). The cache map `.basset` is always read/written with the local `File` facade at `$disk->path('basset/.basset')`: on a remote disk either turn the map off (one remote `exists()` per asset per page) or give the disk a local `root` (Laravel's `path()` uses it; the object keys don't) and leave its `url` unset (with `url` set, `root` would end up in the links).
 - Needs correct `APP_URL` and `php artisan storage:link` (default public disk).
 - v6 no longer uses `public/packages` — custom assets there must be moved & loaded with `@basset`.
+
+### What `basset:cache` does NOT pre-cache
+- **`@bassetBlock` output.** The scanner regex (`BassetCache.php`) only matches `basset(`, `@bassetArchive(`, `@bassetDirectory(`. A block file is written the first time a page renders it, on that server's disk.
+- **`@basset($variable)`.** Arguments are `eval`ed from the Blade source, so a variable fails silently. Backpack PRO's chart widget does this for Chart.js (`ChartController::getLibraryFilePath()`); name the file literally in one of your views (e.g. the dashboard) so it gets cached at deploy.
+- **A block is looked up by name before its content is hashed** (`BassetManager::bassetBlock()`). Same name + different content (two views sharing a name, or Blade values like `{{ $org->color }}` / `auth()->id()` / `$field['name']` inside the block) → every request gets whatever was rendered first. Give each block a unique, app-prefixed name (`app/fields/x.js`, not `backpack/...`), and keep per-request values out of it (data attributes on the element, or a plain `<script>`/`<style>` next to the block). Translations are fine only when the locale is part of the name (Backpack's own `'backpack/crud/buttons/delete-button-'.app()->getLocale().'.js'`).
+- **Small one-off inline CSS/JS on a single page** gains little from a block (an extra request instead of a few hundred bytes) — plain inline code is simpler. Blocks earn their place in field/column/button views that render several times per page (printed once) and in large static scripts.
+
+### Several servers / pods
+- With a per-server disk, block files (and variable `@basset`s) exist only on the server that first rendered them; a request that lands on another server gets 403/404 (Laravel's `storage/{path}` fallback answers as `text/html`, so the browser refuses the script). Use a disk every server shares (object storage, or a shared volume).
+- On a shared disk run only `basset:cache` at deploy — `basset:clear` / `basset:fresh` delete files the other servers are still serving.
+
+### Your own CSS/JS: Vite, not local `@basset` files
+- **Local files are copied once, under a fixed path, and never re-read.** `@basset(base_path('…'))`, `@basset(public_path('…'))` and local paths in the `styles`/`scripts` config (`ui.php` or the theme config) are copied into the Basset disk; while that copy exists, `BassetManager::basset()` serves it (`IN_CACHE`) without comparing content. The `?…` Basset appends is a hash of the `composer.lock` *path*, not of any content, so it never changes either. On a per-server disk that is reset on deploy this goes unnoticed; on a **shared** disk (bucket, shared volume) edits never reach users.
+- **A relative path is not copied at all** (`'js/admin/x.js'` in `scripts`): Basset prints it as-is, but first checks the disk for a copy on every render — one remote call per asset per page on a remote disk.
+- CDN URLs are versioned and blocks are content-hashed, so both are safe.
+- **For your own assets, use Vite:** add the file to `vite.config.js` `input` and to `vite_scripts` / `vite_styles` (see `ui-widgets-themes.md` for which config file wins). Vite gives content-hashed file names and the page's CSP nonce. Keep only package/theme files on Basset (they change only with a package update — after updating, delete their copies from a shared disk).
 
 ## Updating
 ```bash
 composer update backpack/crud backpack/pro backpack/theme-tabler backpack/permissionmanager
-php artisan basset:clear && php artisan basset:cache
+php artisan basset:cache        # basset:fresh (clear + cache) only on a single server with its own disk
 php artisan config:clear && php artisan view:clear && php artisan cache:clear
 ```
 If the table looks broken after an update → hard refresh (browser cache).
@@ -62,7 +80,7 @@ Composer pulls `dist` from `repo.backpackforlaravel.com` (never `source` — you
 composer install --no-dev --optimize-autoloader
 php artisan migrate --force
 php artisan storage:link
-php artisan basset:clear && php artisan basset:cache
+php artisan basset:cache        # basset:fresh on a single server; never clear a disk shared by several servers
 php artisan optimize:clear && php artisan optimize        # config/route/view cache
 ```
 - `APP_URL` must be the real URL (Basset builds URLs from it); `APP_DEBUG=false`.
