@@ -173,7 +173,8 @@ Return the `id` and `integrity` hash to the frontend. Widget markup, `wpwlOption
 - `paymentTarget: "_top"` moves 3-D Secure to a full-page redirect; leave it unset to keep the
   challenge on the page, in the widget's own iframe.
 - Guard each wallet in its own `onPaymentAuthorized`; `onBeforeSubmitCard` covers the card form only.
-- `applePay.version` defaults to `1`; `supportedCountries` is honoured only with `version: 3` or later.
+- `applePay.version` defaults to `1`. Send the lowest version that covers every option and network:
+  `supportedCountries` needs 3, `mada` needs 5 (table in `references/widget.md`).
 - Never set `messageNamespace` — it is the widget's internal relay flag, not a merchant option.
 
 ### Complete

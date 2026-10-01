@@ -143,18 +143,31 @@ The Apple Pay JS API version. **Default `1`.** The widget passes it straight to
 `new ApplePaySession(version, request)` and removes the button when
 `ApplePaySession.supportsVersion(version)` is false.
 
-Set it whenever you use an option from a later version — the docs mark each one:
-`supportedCountries` and `requiredShippingContactFields: ["phoneticName"]` need **3+**,
-`supportsCouponCode`, `couponCode`, `shippingContactEditingMode` and
-`shippingMethods[].dateComponentsRange` need **12+**. Use the lowest version that covers them.
+The docs say to use the lowest version that covers every option **and every network** you send.
+Minimum versions they list:
+
+| Version | Options | `supportedNetworks` values |
+|---|---|---|
+| 1 | everything not listed below | `amex`, `chinaUnionPay`, `discover`, `interac`, `masterCard`, `privateLabel`, `visa` |
+| 2 | | `jcb` |
+| 3 | `supportedCountries`, `phoneticName` / `phoneticGivenName` / `phoneticFamilyName` | |
+| 4 | | `cartesBancaires`, `eftpos`, `electron`, `maestro`, `vPay` |
+| 5 | | **`mada`**, `elo` |
+| 11 | `billingContact` in `onPaymentMethodSelected` | `girocard`, `mir` |
+| 12 | `supportsCouponCode`, `couponCode`, `onCouponCodeChanged`, `shippingContactEditingMode`, `shippingMethods[].dateComponentsRange` | |
+| 13 | | `dankort` |
+| 14 | | `bancomat`, `bancontact` |
+
+So a Saudi checkout that sends `mada` needs `version: 5`, even though `supportedCountries` alone
+needs only 3. What happens at runtime with a lower version is not documented.
 
 ```javascript
 applePay: {
   countryCode: "SA",
   merchantCapabilities: ["supports3DS"],
   supportedNetworks: ["mada", "visa", "masterCard"],
-  version: 3,
-  supportedCountries: ["SA", "AE"]   // only honoured with version >= 3
+  version: 5,                         // mada needs 5; supportedCountries needs 3
+  supportedCountries: ["SA", "AE"]
 }
 ```
 
