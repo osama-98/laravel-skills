@@ -1,6 +1,6 @@
 ---
 name: hyperpay
-description: "Builds and maintains HyperPay (OPPWA) payment integrations in Laravel, with an offline API reference. Covers prepare-checkout and the COPYandPAY widget (wpwlOptions, 3-D Secure), verifying the result, saving cards as registration tokens, merchant-initiated charges for subscriptions and installments, the encrypted webhook, backoffice operations (capture, refund, reversal), result codes and test cards. Activate when adding or changing HyperPay payment code, or when the user mentions HyperPay, OPPWA, COPYandPAY, wpwlOptions, registration token, standing instruction, MIT charge, or a HyperPay webhook — without fetching the live docs."
+description: "Builds and maintains HyperPay (OPPWA) payment integrations in Laravel, with an offline API reference. Covers prepare-checkout and the COPYandPAY widget (wpwlOptions, 3-D Secure, Apple Pay and Google Pay callbacks), verifying the result, saving cards as registration tokens, merchant-initiated charges for subscriptions and installments, the encrypted webhook, backoffice operations (capture, refund, reversal), result codes and test cards. Activate when adding or changing HyperPay payment code, or when the user mentions HyperPay, OPPWA, COPYandPAY, wpwlOptions, Apple Pay, Google Pay, registration token, standing instruction, MIT charge, or a HyperPay webhook — without fetching the live docs."
 license: MIT
 metadata:
   author: osama-98
@@ -22,7 +22,7 @@ Read the file that matches the task — do not load them all.
 | `references/subscriptions.md` | Scheduling API, cron `job.*` fields, MAC scheduler, merchant advice codes |
 | `references/webhooks.md` | Configuration, AES-256-GCM decryption, payload shapes, retries, real payloads |
 | `references/result-codes.md` | Full result-code taxonomy with regex patterns and required action |
-| `references/widget.md` | COPYandPAY widget integration, `wpwlOptions` JS API, where 3-D Secure opens |
+| `references/widget.md` | COPYandPAY widget integration, `wpwlOptions` JS API, where 3-D Secure opens, Apple Pay / Google Pay options and callbacks, `messageNamespace` |
 | `references/testing.md` | Test cards, `testMode`, 3DS test scenarios |
 | `references/payment-methods.md` | Brand capability matrix (VISA, MADA, APPLEPAY, GCC brands, BNPL: VALU / POSTPAY) |
 | `references/doc-index.md` | Canonical URL map of all 94 docs pages + scraping notes, for anything not covered above |
@@ -169,6 +169,12 @@ open, not a failed payment.
 
 Return the `id` and `integrity` hash to the frontend. Widget markup, `wpwlOptions` and where
 3-D Secure opens are in `references/widget.md`.
+
+- `paymentTarget: "_top"` moves 3-D Secure to a full-page redirect; leave it unset to keep the
+  challenge on the page, in the widget's own iframe.
+- Guard each wallet in its own `onPaymentAuthorized`; `onBeforeSubmitCard` covers the card form only.
+- `applePay.version` defaults to `1`; `supportedCountries` is honoured only with `version: 3` or later.
+- Never set `messageNamespace` — it is the widget's internal relay flag, not a merchant option.
 
 ### Complete
 

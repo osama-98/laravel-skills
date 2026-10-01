@@ -93,7 +93,7 @@ More skills are on the way. [Request a skill](https://github.com/osama-98/larave
 - Config layout, layering, prepare-checkout and the COPYandPAY widget
 - Saved cards (registration tokens) and merchant-initiated charges for subscriptions and installments
 - The encrypted webhook and testing
-- 10 reference pages: parameters, tokenization, backoffice (capture, refund, reversal), subscriptions, webhooks, result codes, widget options and where 3-D Secure opens, test cards, payment-method matrix and doc index
+- 10 reference pages: parameters, tokenization, backoffice (capture, refund, reversal), subscriptions, webhooks, result codes, widget options (where 3-D Secure opens, Apple Pay and Google Pay callbacks), test cards, payment-method matrix and doc index
 
 ## How it works
 
