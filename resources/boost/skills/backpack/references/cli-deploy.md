@@ -57,12 +57,24 @@ Backpack v6 uses `backpack/basset` 1.x (`backpack/crud` 6 requires `^1.1.1|^1.3.
 ### Several servers / pods
 - With a per-server disk, block files (and variable `@basset`s) exist only on the server that first rendered them; a request that lands on another server gets 403/404 (Laravel's `storage/{path}` fallback answers as `text/html`, so the browser refuses the script). Use a disk every server shares (object storage, or a shared volume).
 - On a shared disk run only `basset:cache` at deploy — `basset:clear` / `basset:fresh` delete files the other servers are still serving.
+- **On a shared disk, version the Basset `path`.** Package/theme files Basset copies from local paths (`@basset(base_path('vendor/backpack/…'))`, theme `styles` such as `public_path('vendor/backpack/theme-tabler/css/colors.css')`) keep a fixed path, so after `composer update backpack/*` `BassetManager::basset()` finds the old copy (`exists()`) and never uploads the new one. Deleting the copies by hand depends on someone remembering, and fails outright when the disk sends long-lived `Cache-Control` (`max-age=31536000, immutable`): browsers keep the old URL. Instead, name the folder after the installed Backpack commits in `config/backpack/basset.php` (the package merges its defaults under it, so only `path` is needed):
+  ```php
+  use Composer\InstalledVersions;
+
+  'path' => 'basset/'.substr(md5(implode('|', [
+      InstalledVersions::getReference('backpack/crud'),
+      InstalledVersions::getReference('backpack/theme-tabler'),
+      InstalledVersions::getReference('backpack/pro'),
+  ])), 0, 8),
+  ```
+  A normal deploy reuses the folder (`basset:cache` only checks `exists()`); a Backpack update writes a new folder once while old pods keep serving the old one. CDN assets are already versioned, so they only get re-copied on that update.
+- **On a remote disk, create the cache-map folder before `basset:cache`.** `CacheMap::save()` writes `.basset` with `File::put($disk->path($path.'.basset'))` and never creates the folder; on object storage no asset write creates it either, so the save fails with `file_put_contents(…): Failed to open stream` and every page falls back to one remote `exists()` per asset. With a versioned `path` the folder name is only known after `config:cache`: `mkdir -p "storage/app/public/$(php -r 'require "vendor/autoload.php"; echo (require "bootstrap/cache/config.php")["backpack"]["basset"]["path"];')"` (adjust `storage/app/public` to the disk's `root`).
 
 ### Your own CSS/JS: Vite, not local `@basset` files
 - **Local files are copied once, under a fixed path, and never re-read.** `@basset(base_path('…'))`, `@basset(public_path('…'))` and local paths in the `styles`/`scripts` config (`ui.php` or the theme config) are copied into the Basset disk; while that copy exists, `BassetManager::basset()` serves it (`IN_CACHE`) without comparing content. The `?…` Basset appends is a hash of the `composer.lock` *path*, not of any content, so it never changes either. On a per-server disk that is reset on deploy this goes unnoticed; on a **shared** disk (bucket, shared volume) edits never reach users.
 - **A relative path is not copied at all** (`'js/admin/x.js'` in `scripts`): Basset prints it as-is, but first checks the disk for a copy on every render — one remote call per asset per page on a remote disk.
 - CDN URLs are versioned and blocks are content-hashed, so both are safe.
-- **For your own assets, use Vite:** add the file to `vite.config.js` `input` and to `vite_scripts` / `vite_styles` (see `ui-widgets-themes.md` for which config file wins). Vite gives content-hashed file names and the page's CSP nonce. Keep only package/theme files on Basset (they change only with a package update — after updating, delete their copies from a shared disk).
+- **For your own assets, use Vite:** add the file to `vite.config.js` `input` and to `vite_scripts` / `vite_styles` (see `ui-widgets-themes.md` for which config file wins). Vite gives content-hashed file names and the page's CSP nonce. Keep only package/theme files on Basset (they change only with a package update — on a shared disk, version the Basset `path` so the update gets new URLs; see *Several servers / pods*).
 
 ## Updating
 ```bash
