@@ -20,7 +20,7 @@ Read the file that matches the task — do not load them all.
 | `references/tokenization.md` | Registration tokens, token types, card-on-file / standing instruction matrix |
 | `references/backoffice.md` | Capture, refund, reversal, payout, rebill, chargeback + legal transaction flows |
 | `references/subscriptions.md` | Scheduling API, cron `job.*` fields, MAC scheduler, merchant advice codes |
-| `references/webhooks.md` | Configuration, AES-256-GCM decryption, payload shapes, retries, real payloads |
+| `references/webhooks.md` | Configuration, entity scope, Click to Test, AES-256-GCM decryption + test vector, payload shapes per type, retries, real payloads |
 | `references/result-codes.md` | Full result-code taxonomy with regex patterns and required action |
 | `references/widget.md` | COPYandPAY widget integration, `wpwlOptions` JS API, where 3-D Secure opens, Apple Pay / Google Pay options and callbacks, `messageNamespace` |
 | `references/testing.md` | Test cards, `testMode`, 3DS test scenarios |
@@ -183,7 +183,9 @@ The shopper returns to `shopperResultUrl?resourcePath=/v1/checkouts/{id}/payment
 `GET` that path with `entityId` in the query, map the result code, and fulfill.
 
 Checkout IDs expire after 30 minutes — prune abandoned draft transactions on the same clock.
-Status GETs are throttled to 2 per checkout per minute, so treat the webhook as the source of truth.
+Status GETs are throttled to 2 per checkout per minute, so do not poll. Decide with this one status
+GET while the shopper is present (capture, fulfillment); the webhook can lag up to 15 minutes, so it
+settles what the redirect missed and drives reconciliation, not the in-session decision.
 
 ## Flow 2 — merchant-initiated charges
 
@@ -252,8 +254,11 @@ Rules that matter:
 - **The checkout identifier is `payload.ndc`**, not `payload.id`. `id` is HyperPay's internal
   transaction ID.
 - **Deduplicate.** Delivery is at-least-once and unordered; the same checkout arrives PENDING then
-  SUCCESS, sometimes twice. Make completion idempotent — return early when the transaction is
-  already successful.
+  SUCCESS, sometimes twice, and can carry more than one final status (a success and a failure).
+  Key on transaction ID plus status. Make completion idempotent — return early when the
+  transaction is already successful, and never let a later failure undo it.
+- **Tolerate unknown fields.** The payload mirrors the matching API response and HyperPay adds
+  fields without notice; never reject a key you do not recognise.
 
 ### Decryption
 
@@ -307,10 +312,12 @@ into "retriable" burns scheme fees.
 - Fake the HTTP client (`Http::fake()`) for unit tests; assert on the outgoing payload, which is
   where standing-instruction bugs hide.
 - Webhook tests should encrypt a fixture payload with a known key and post it with the two hex
-  headers, so the decryptor is covered rather than bypassed. Cover at least:
+  headers, so the decryptor is covered rather than bypassed. The docs' known-answer vector is in
+  `references/webhooks.md`. Cover at least:
   - a raw-hex delivery and a JSON-wrapped `{"encryptedBody": …}` delivery — both must return 2xx
   - a non-hex body and non-hex headers — 2xx, never a 500 (this is the `strict_types` `TypeError`)
   - the PENDING webhook that precedes SUCCESS — must not fulfill and must not store a card
   - a redelivered SUCCESS — one transaction, one stored card, one entitlement
+  - a failure arriving after the SUCCESS — the transaction stays successful
 - Assert the payload builder omits `testMode` when `APP_ENV=production`, even with
   `HYPERPAY_ENV` mistyped to something non-production.
