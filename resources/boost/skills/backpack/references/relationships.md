@@ -110,7 +110,7 @@ With the FetchOperation you can read `backpack_form_input()` inside the `query` 
 
 ## Save-time authorization guard (IDOR protection, crud 6.8+)
 - Non-AJAX selects: the `options` closure defines allowed keys.
-- AJAX + FetchOperation with conventional naming (entity `tag` → `fetchTag()`): the fetch `query` closure is reused automatically.
+- AJAX + FetchOperation with conventional naming (entity `tag` → `fetchTag()`): the fetch `query` closure is reused automatically — only when the installed backpack/pro `FetchOperation` defines `getRelationFetchQuery()` (pro 2.2.36 doesn't). Otherwise set `relation_options_query` to the same query, or out-of-scope keys are saved.
 - Manual `data_source` not matching the name → `'relation_options_query_source' => 'fetchProductCategory'`.
 - Custom endpoint → `'relation_options_query' => fn ($query) => $query->where(...)`.
 - Out-of-scope keys are silently dropped for HasMany/MorphMany/BelongsToMany/MorphToMany; BelongsTo aborts with a 422 validation error.

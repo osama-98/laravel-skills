@@ -312,7 +312,7 @@ public function fetchTag()      // route: POST {seg}/fetch/tag   (method name â†
         'searchable_attributes' => ['name', 'description'], // [] = don't guess (use your own query)
         'paginate' => 10,
         'searchOperator' => 'LIKE',
-        'query' => fn ($model) => $model->where('active', 1),   // ALSO enforced at save time
+        'query' => fn ($model) => $model->where('active', 1),   // enforced at save time only if FetchOperation has getRelationFetchQuery() (not pro 2.2.36)
         'append_attributes' => ['full_label'],   // accessors added only for fetch results
     ]);
 }
