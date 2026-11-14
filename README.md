@@ -70,6 +70,7 @@ php artisan boost:update
 |-------|---------------------------|-------------------------------|
 | **Backpack for Laravel v6** (admin panel) | `backpack` | `backpack`: only when `backpack/crud` is installed; adapts to `backpack/pro` and `permissionmanager` |
 | **HyperPay / OPPWA** (payment gateway) | `hyperpay` | `hyperpay`: only once `config/hyperpay.php` exists |
+| **Clean code** (API architecture and naming) | `clean-code` | — |
 
 More skills are on the way. [Request a skill](https://github.com/osama-98/laravel-skills/issues/new?title=Skill%20request:%20) or [add one yourself](#contributing).
 
@@ -95,6 +96,16 @@ More skills are on the way. [Request a skill](https://github.com/osama-98/larave
 - The encrypted webhook and testing
 - 10 reference pages: parameters, tokenization, backoffice (capture, refund, reversal), subscriptions, webhooks, result codes, widget options (where 3-D Secure opens, Apple Pay and Google Pay callbacks), test cards, payment-method matrix and doc index
 
+### Clean code
+
+**`clean-code`**: a layered architecture for Laravel API endpoints, so every endpoint reads the same way.
+
+- Naming conventions for every class kind, method, variable, route and enum
+- Thin RESTful controllers, FormRequest validation, rule classes and `after()` invariants
+- Policy authorization, focused Services, readonly DTOs only when a second entry point needs them
+- Model scopes, events for side effects only, queued jobs for slow work
+- Resources returned through one `ApiResponse` envelope, and Pest architecture tests that guard the layers
+
 ## How it works
 
 The package ships two kinds of content, and Laravel Boost installs both:
@@ -115,6 +126,7 @@ resources/boost/
 │   └── hyperpay.blade.php
 └── skills/
     ├── backpack/              SKILL.md, references/, templates/
+    ├── clean-code/            SKILL.md, references/
     └── hyperpay/              SKILL.md, references/
 ```
 
