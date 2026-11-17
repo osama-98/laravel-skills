@@ -39,5 +39,6 @@ Clients parse these shapes, so never rename a method or change a key without upd
 | `AccessDeniedHttpException` (a failed Policy or Gate) | `forbidden()`, 403 |
 | `NotFoundHttpException` (unknown route, `findOrFail()`, route model binding) | `notFound()`, 404 |
 | Any other `HttpExceptionInterface` (`abort(409, ...)`) | `error()` with its status and message, or the standard status text when the message is empty |
+| A domain exception with its own `render()` (`ShouldntReport` + `HasRender`) | `error()` with its `$status` and translated message, built by the exception itself |
 
-Laravel converts `ModelNotFoundException` and `AuthorizationException` before these callbacks run, which is why the table names the converted types. Callbacks match in registration order, so the `HttpExceptionInterface` catch-all stays last. Unexpected exceptions keep Laravel's default 500 handling.
+Laravel calls an exception's own `render()` method before any `bootstrap/app.php` render callback, so a domain exception needs no entry in `bootstrap/app.php`. Laravel converts `ModelNotFoundException` and `AuthorizationException` before these callbacks run, which is why the table names the converted types. Callbacks match in registration order, so the `HttpExceptionInterface` catch-all stays last. Unexpected exceptions keep Laravel's default 500 handling.
