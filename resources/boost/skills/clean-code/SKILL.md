@@ -131,7 +131,6 @@ These are deliberate. Laravel's docs and community guides (Spatie, alexeymezenin
 | Enum names and cases | `PostStatusEnum`, `case IN_REVIEW` | `PostStatus`, `case InReview` |
 | Event names | `PostPublishedEvent` | `PostPublished` |
 | DTOs | `final readonly class` | not `final` by default |
-| Authenticated user in a controller | `auth()->user()` inline | `$request->user()` |
 
 ## 2. Routes
 
@@ -208,7 +207,7 @@ public function store(StorePostRequest $request): JsonResponse
 }
 ```
 
-A controller may only contain its action methods plus the constructor. Never add private/protected helper methods to a controller, not even a one-liner that wraps `auth()->user()`. Anything that is not an action belongs in a Service, a Form Request, or a Policy. Call `auth()->user()` inline where you need the authenticated user, and pass it into the Service method as a plain argument. Bulk destroy actions accept `array|string|int $ids` straight from the route or request and hand them to the Service.
+A controller may only contain its action methods plus the constructor. Never add private/protected helper methods to a controller, not even a one-liner that wraps `auth()->user()`. Anything that is not an action belongs in a Service, a Form Request, or a Policy. Call `auth()->user()` or `$request->user()` inline where you need the authenticated user (both ask the default guard and return the same user; pick one per app), and pass it into the Service method as a plain argument. Bulk destroy actions accept `array|string|int $ids` straight from the route or request and hand them to the Service.
 
 A controller never catches the exceptions a Service throws and never `match`es on a result to pick an error response. An expected failure renders itself (section 7), so the action stays the happy path only.
 
@@ -446,7 +445,7 @@ Pick by what the value is:
 | The value is | Use |
 | --- | --- |
 | A model named in the URL (`/posts/{post}`) | Route model binding, or `resolveRouteBinding()` on the model for a custom lookup |
-| Who is calling (an API key client, a partner, a device) | A custom guard with `Auth::viaRequest()`; read it with `auth()->user()` behind the `auth:` middleware |
+| Who is calling (an API key client, a partner, a device) | A custom guard with `Auth::viaRequest()`; read it with `auth()->user()` or `$request->user()` behind the `auth:` middleware |
 | Derived from this endpoint's input (a coupon from a code, a verified signature) | The Form Request: compute it in `passedValidation()`, keep it on a property, expose a typed method (`$request->coupon()`) |
 | Any other per-request value several layers need (the current tenant) | A `scoped` container binding (below) |
 | A slow calculation called many times in one request | `once(fn () => ...)` |
@@ -476,6 +475,48 @@ public function index(Tenant $tenant): JsonResponse
         paginator: $posts,
         resource: PostResource::class,
     );
+}
+```
+
+A caller that is not a database user, such as a partner whose identity a gateway forwards in headers, is a class in `app/Auth/` extending `Illuminate\Auth\GenericUser`. It inherits the password and remember-token methods instead of leaving them empty, and declares typed properties for what the endpoints read. Each scope it carries is a Gate, checked by the route's `can:` middleware, so a missing scope is a `403` like any other denied ability:
+
+```php
+// app/Auth/Partner.php
+class Partner extends GenericUser
+{
+    public function __construct(public readonly string $id, public readonly array $scopes)
+    {
+        parent::__construct(['id' => $id]);
+    }
+
+    public static function fromGatewayHeaders(Request $request): ?self {}
+
+    public function hasScope(string $scope): bool
+    {
+        return in_array($scope, $this->scopes, strict: true);
+    }
+}
+
+// AppServiceProvider::boot(); config/auth.php adds 'partner' => ['driver' => 'partner']
+Auth::viaRequest('partner', Partner::fromGatewayHeaders(...));
+Gate::define('posts:write', fn (Partner $partner): bool => $partner->hasScope('posts:write'));
+
+// routes/api.php
+Route::prefix('partners/v1')
+    ->middleware(['auth:partner', 'can:posts:write'])
+    ->group(function () {
+        Route::apiResource('posts', PostController::class)->only(['store']);
+    });
+```
+
+A request guard caches the user it resolved, and a feature test sends every request through the same app, so a test that calls as two different partners sees the first one twice. Clear the guard before each request in `tests/TestCase.php`:
+
+```php
+public function call($method, $uri, $parameters = [], $cookies = [], $files = [], $server = [], $content = null): TestResponse
+{
+    $this->app['auth']->guard('partner')->forgetUser();
+
+    return parent::call($method, $uri, $parameters, $cookies, $files, $server, $content);
 }
 ```
 
