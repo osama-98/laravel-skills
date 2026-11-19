@@ -478,9 +478,15 @@ public function index(Tenant $tenant): JsonResponse
 }
 ```
 
-A caller that is not a database user, such as a partner whose identity a gateway forwards in headers, is a class in `app/Auth/` extending `Illuminate\Auth\GenericUser`. It inherits the password and remember-token methods instead of leaving them empty, and declares typed properties for what the endpoints read. Each scope it carries is a Gate, checked by the route's `can:` middleware, so a missing scope is a `403` like any other denied ability:
+Every guard resolves its user in an invokable class in `app/Auth/` named `{Caller}Guard`, with `__invoke(Request $request)` returning the user or `null`, the shape Laravel Sanctum's own `Guard` class uses, so all guards are registered the same way: `Auth::viaRequest('partner', new PartnerGuard)`. A caller stored in the database returns its authenticatable model. A caller that is not a database user, such as a partner whose identity a gateway forwards in headers, is a class in `app/Auth/` extending `Illuminate\Auth\GenericUser`. It inherits the password and remember-token methods instead of leaving them empty, and declares typed properties for what the endpoints read. Each scope it carries is a Gate, checked by the route's `can:` middleware, so a missing scope is a `403` like any other denied ability:
 
 ```php
+// app/Auth/PartnerGuard.php
+class PartnerGuard
+{
+    public function __invoke(Request $request): ?Partner {}
+}
+
 // app/Auth/Partner.php
 class Partner extends GenericUser
 {
@@ -489,8 +495,6 @@ class Partner extends GenericUser
         parent::__construct(['id' => $id]);
     }
 
-    public static function fromGatewayHeaders(Request $request): ?self {}
-
     public function hasScope(string $scope): bool
     {
         return in_array($scope, $this->scopes, strict: true);
@@ -498,7 +502,7 @@ class Partner extends GenericUser
 }
 
 // AppServiceProvider::boot(); config/auth.php adds 'partner' => ['driver' => 'partner']
-Auth::viaRequest('partner', Partner::fromGatewayHeaders(...));
+Auth::viaRequest('partner', new PartnerGuard);
 Gate::define('posts:write', fn (Partner $partner): bool => $partner->hasScope('posts:write'));
 
 // routes/api.php
